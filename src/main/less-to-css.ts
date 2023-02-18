@@ -11,7 +11,7 @@ const localize = nls.config({ messageFormat: nls.MessageFormat.both })();
 
 const KEYS = `ng-yunzai-vscode`;
 const KEYS_AUTOGENERATE = 'AUTOGENERATE:';
-const INGORE_DELON = [
+const IGNORE_YELON = [
   'sv__',
   'se__',
   'sg__',
@@ -93,7 +93,7 @@ function parseNodes(css: string, notifier: Notifier): LessToCssNode[] {
       res.findIndex((w) => w.name === cls) !== -1 ||
       !/^-?[_a-zA-Z]+[_a-zA-Z0-9-]*$/g.test(cls) || // .a:hover {}
       (cls.startsWith('ant-') && !cls.includes('__')) || // .ant-btn
-      INGORE_DELON.findIndex((w) => cls.startsWith(w)) !== -1
+      IGNORE_YELON.findIndex((w) => cls.startsWith(w)) !== -1
     ) {
       continue;
     }

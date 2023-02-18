@@ -7,7 +7,7 @@ description:
 ```ts
 import { Component, ChangeDetectionStrategy, OnInit } from '@angular/core';
 import { NzModalRef, NzMessageService } from 'ng-zorro-antd';
-import { _HttpClient } from '@delon/theme';
+import { _HttpClient } from '@yelon/theme';
 
 const URL = '/';
 

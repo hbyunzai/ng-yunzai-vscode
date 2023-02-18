@@ -1,0 +1,14 @@
+.vscode/**
+# node_modules/**
+src/**
+snippets/**
+scripts/**
+
+.editorconfig
+.gitignore
+.prettierrc
+*.vsix
+snippet-config.json
+tsconfig.json
+tslint.json
+yarn.lock

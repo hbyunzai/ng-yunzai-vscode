@@ -1,6 +1,6 @@
 {
   "$schema": "./node_modules/vscode-snippet-generator/schema.json",
-  "prefix": "ny",
+  "prefix": "na",
   "separator": "-",
   "i18n": "zh-CN",
   "i18nTpl": "{zh-CN}({en-US})",

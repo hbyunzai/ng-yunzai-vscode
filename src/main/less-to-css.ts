@@ -1,8 +1,9 @@
 import { existsSync, readFileSync } from 'fs';
 import * as less from 'less';
 import { dirname, join } from 'path';
-import { MarkdownString, workspace } from 'vscode';
+import { MarkdownString, Uri, workspace } from 'vscode';
 import * as nls from 'vscode-nls';
+import { parse } from 'jsonc-parser';
 import { CONFIG } from './config';
 import Notifier from './notifier';
 import { NgYunzaiImportPlugin } from './plugin-less-import';
@@ -11,7 +12,7 @@ const localize = nls.config({ messageFormat: nls.MessageFormat.both })();
 
 const KEYS = `ng-yunzai-vscode`;
 const KEYS_AUTOGENERATE = 'AUTOGENERATE:';
-const IGNORE_YELON = [
+const INGORE_YELON = [
   'sv__',
   'se__',
   'sg__',
@@ -93,7 +94,7 @@ function parseNodes(css: string, notifier: Notifier): LessToCssNode[] {
       res.findIndex((w) => w.name === cls) !== -1 ||
       !/^-?[_a-zA-Z]+[_a-zA-Z0-9-]*$/g.test(cls) || // .a:hover {}
       (cls.startsWith('ant-') && !cls.includes('__')) || // .ant-btn
-      IGNORE_YELON.findIndex((w) => cls.startsWith(w)) !== -1
+      INGORE_YELON.findIndex((w) => cls.startsWith(w)) !== -1
     ) {
       continue;
     }
@@ -112,15 +113,15 @@ function parseNodes(css: string, notifier: Notifier): LessToCssNode[] {
   return res;
 }
 
-export async function LessToCss(notifier: Notifier): Promise<LessToCssResult> {
-  // 1. find angular.json
-  const angularJsonUris = await workspace.findFiles('angular.json', '**/node_modules/**', 1);
-  if (!angularJsonUris || angularJsonUris.length === 0) {
-    notifier.notify('alert', KEYS + localize('notFoundAngularJson', ': Angular.json file not found'));
-    return null;
+async function getDefaultProjectName(notifier: Notifier, angularJson: any): Promise<string> {
+  const ngYunzaiUris = await workspace.findFiles('ng-yunzai.json', '**/node_modules/**', 1);
+  if (ngYunzaiUris && ngYunzaiUris.length > 0) {
+    const ngYunzaiJson = parse(readFileSync(ngYunzaiUris[0].fsPath).toString());
+    if (typeof ngYunzaiJson.defaultProject === 'string') {
+      return ngYunzaiJson.defaultProject;
+    }
   }
-  // 2. find default project
-  const angularJson = JSON.parse(readFileSync(angularJsonUris[0].fsPath).toString());
+
   let projectName = angularJson.defaultProject;
   if (!projectName) {
     const allProjectNames = Object.keys(angularJson.projects).filter((w) => !w.endsWith('-e2e'));
@@ -130,12 +131,34 @@ export async function LessToCss(notifier: Notifier): Promise<LessToCssResult> {
     }
     projectName = allProjectNames[0];
   }
+  return projectName;
+}
+
+export async function LessToCss(notifier: Notifier): Promise<LessToCssResult> {
+  // 1. find angular.json
+  const angularJsonUris = await workspace.findFiles('angular.json', '**/node_modules/**', 1);
+  if (!angularJsonUris || angularJsonUris.length === 0) {
+    notifier.notify('alert', KEYS + localize('notFoundAngularJson', ': Angular.json file not found'));
+    return null;
+  }
+  const angularJson = parse(readFileSync(angularJsonUris[0].fsPath).toString());
+  // 2. find default project
+  let projectName = await getDefaultProjectName(notifier, angularJson);
+  if (projectName == null) return;
 
   const rootPath = dirname(angularJsonUris[0].fsPath);
   const sourceRoot = angularJson.projects[projectName].sourceRoot || 'src';
   const lessPath = join(rootPath, sourceRoot, 'styles.less');
   if (!existsSync(lessPath)) {
-    notifier.notify('hubot', KEYS + localize('notFoundDefaultProject', ': No default project was found'));
+    notifier.notify(
+      'hubot',
+      KEYS +
+        localize(
+          'notFoundDefaultProject',
+          ': No found style.less file in [{0}] project (If multiple projects need to specify defaultProject property in angular.json)',
+          projectName,
+        ),
+    );
     return null;
   }
 
